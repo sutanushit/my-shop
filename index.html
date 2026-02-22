@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator</title>
+    <style>
+        table {
+            min-width: 50px;
+            border-collapse: collapse;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+
+        th {
+            background-color: darksalmon;
+        }
+
+        th,
+        td {
+            text-align: right;
+        }
+
+        th:first-child,
+        td:first-child {
+            text-align: left;
+        }
+
+        td:nth-child(5),
+        td:nth-child(8) {
+            font-weight: bold;
+            background-color: rgb(249, 249, 19);
+        }
+
+        .button {
+            margin: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <input type="date" id="datePicker" onchange="updateInvoiceDate()" style="margin-left: 10px;">
+    </br>
+    <h1></h1>
+    <table id="invoiceHeader">
+        <thead>
+            <tr>
+                <th>Invoice Date: <span id="invoiceDate"></span></th>
+                
+            </tr>
+    </table>
+    <table id="invoiceTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Weight</th>
+                <th>Rate</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+                <th>Cost</th>
+                <th>RR Unit Cost</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Items will be added here dynamically -->
+        </tbody>
+    </table>
+    <br>
+    Total quantity: <b><span id="totalQuantity">0</span></b>,
+    Total Price: <b><span id="totalPrice">0.00</span></b>
+    <br>
+    <br>
+    <button onclick="openForm()">+</button>
+
+    <div id="itemForm" style="display:none;">
+        <h2>Add/Update Item</h2>
+        <form id="form">
+            <label for="productName">Product Name:</label>
+            <input type="text" id="productName" name="productName" required><br><br>
+            <label for="netWeight">Net Weight:</label>
+            <select id="netWeight" name="netWeight" required onchange="updateCost()">
+                <option value="50">50</option>
+                <option value="26">26</option>
+                <option value="10">10</option>
+            </select><br><br>
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" name="quantity" required><br><br>
+            <label for="rate">Rate:</label>
+            <input type="number" id="rate" name="rate" required><br><br>
+            <label for="cost">Cost:</label>
+            <input type="number" id="cost" name="cost" value="3" required><br><br>
+            <button type="button" onclick="submitForm()">Submit</button>
+            <button type="button" onclick="closeForm()">Cancel</button>
+        </form>
+    </div>
+
+    <script>
+        //const date = new Date();
+        //date.setDate(date.getDate());
+        //document.getElementById('invoiceDate').innerText = date.toLocaleDateString();
+
+        let items = [];
+        let editingIndex = -1;
+
+        function openForm(index = -1) {
+            document.getElementById('itemForm').style.display = 'block';
+            if (index >= 0) {
+                editingIndex = index;
+                const item = items[index];
+                document.getElementById('productName').value = item.productName;
+                document.getElementById('netWeight').value = item.netWeight;
+                document.getElementById('quantity').value = item.quantity;
+                document.getElementById('rate').value = item.rate;
+                document.getElementById('cost').value = item.cost;
+            } else {
+                editingIndex = -1;
+                document.getElementById('form').reset();
+            }
+        }
+
+        function closeForm() {
+            document.getElementById('itemForm').style.display = 'none';
+        }
+
+        function submitForm() {
+            const productName = document.getElementById('productName').value;
+            const netWeight = parseFloat(document.getElementById('netWeight').value);
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const rate = parseFloat(document.getElementById('rate').value);
+            const cost = parseFloat(document.getElementById('cost').value);
+            const unitPrice = netWeight * rate / 100;
+            const totalPrice = unitPrice * quantity;
+
+            const item = { productName, netWeight, quantity, rate, unitPrice, totalPrice, cost, finalUnitCost: unitPrice + cost };
+
+            if (editingIndex >= 0) {
+                items[editingIndex] = item;
+            } else {
+                items.push(item);
+            }
+
+            updateTable();
+            closeForm();
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('invoiceTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            let totalInvoicePrice = 0;
+            let totalQuantity = 0;
+
+            items.forEach((item, index) => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = item.productName;
+                row.insertCell(1).innerText = item.netWeight;
+                row.insertCell(2).innerText = item.rate;
+                row.insertCell(3).innerText = item.quantity;
+                row.insertCell(4).innerText = item.unitPrice.toFixed(2);
+                row.insertCell(5).innerText = item.totalPrice.toFixed(2);
+                row.insertCell(6).innerText = item.cost.toFixed(2);
+                row.insertCell(7).innerText = item.finalUnitCost.toFixed(2);
+                const actionsCell = row.insertCell(8);
+                actionsCell.innerHTML = `
+                   <button class="button" onclick="openForm(${index})">U</button>
+                   <button class="button" onclick="removeItem(${index})">X</button>
+               `;
+                totalInvoicePrice += item.totalPrice;
+                totalQuantity += item.quantity;
+            });
+
+            document.getElementById('totalQuantity').innerText = totalQuantity;
+            document.getElementById('totalPrice').innerText = totalInvoicePrice.toFixed(2);
+        }
+
+        function removeItem(index) {
+            items.splice(index, 1);
+            updateTable();
+        }
+        function updateCost() {
+            const netWeight = parseFloat(document.getElementById('netWeight').value);
+            const costInput = document.getElementById('cost');
+            ///costInput.value = netWeight === 50 ? 20 : 10;
+            costInput.value = 3;
+        }
+
+        function updateInvoiceDate() {
+        const selectedDate = document.getElementById('datePicker').value;
+        if (selectedDate) {
+            document.getElementById('invoiceDate').innerText = new Date(selectedDate).toLocaleDateString();
+        }
+    }
+
+    </script>
+</body>
+
+</html>
