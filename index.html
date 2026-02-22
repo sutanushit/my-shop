@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice Generator</title>
+    <title>My Shop</title>
     <style>
         table {
             min-width: 50px;
@@ -40,18 +40,169 @@
         .button {
             margin: 1px;
         }
+
+        /* Modal styling */
+        #itemForm {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 30px;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 75%;
+            max-height: 90vh;
+            display: none;
+            overflow-y: auto;
+        }
+
+        #itemForm::before {
+            content: '';
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        #itemForm.show {
+            display: block !important;
+        }
+
+        #itemForm.show::before {
+            display: block !important;
+        }
+
+        #itemForm .form-title {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+        }
+
+        #itemForm form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #itemForm label {
+            font-weight: bold;
+            margin-top: 5px;
+            color: #333;
+        }
+
+        #itemForm input,
+        #itemForm select {
+            padding: 12px 8px 8px 8px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #fff;
+            color: #000;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        #itemForm input::placeholder {
+            color: #999;
+        }
+
+        #itemForm input:focus,
+        #itemForm select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            position: absolute;
+            top: -12px;
+            left: 8px;
+            background-color: white;
+            padding: 0 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #4CAF50;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .form-group input:focus + label,
+        .form-group input:not(:placeholder-shown) + label,
+        .form-group select:focus + label,
+        .form-group select:not(:placeholder-shown) + label {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #itemForm button {
+            padding: 10px 15px;
+            margin-top: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            flex: 1;
+            margin-right: 8px;
+        }
+
+        #itemForm button:last-of-type {
+            margin-right: 0;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        #itemForm button[type="button"]:first-of-type {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #itemForm button[type="button"]:first-of-type:hover {
+            background-color: #45a049;
+        }
+
+        #itemForm button[type="button"]:last-of-type {
+            background-color: #f44336;
+            color: white;
+        }
+
+        #itemForm button[type="button"]:last-of-type:hover {
+            background-color: #da190b;
+        }
     </style>
 </head>
 
 <body>
 
     <input type="date" id="datePicker" onchange="updateInvoiceDate()" style="margin-left: 10px;">
+    <button onclick="openInvoiceList()" style="margin-left: 10px;">📋 Invoices</button>
     </br>
     <h1></h1>
     <table id="invoiceHeader">
         <thead>
             <tr>
-                <th>Invoice Date: <span id="invoiceDate"></span></th>
+                <th>Invoice Date: <span id="invoiceDate"></span> | Serial #: <span id="invoiceSerial">-</span></th>
                 
             </tr>
     </table>
@@ -65,7 +216,7 @@
                 <th>Unit Price</th>
                 <th>Total</th>
                 <th>Cost</th>
-                <th>RR Unit Cost</th>
+                <th>Unit Cost</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -80,38 +231,232 @@
     <br>
     <button onclick="openForm()">+</button>
 
-    <div id="itemForm" style="display:none;">
-        <h2>Add/Update Item</h2>
+    <div id="itemForm">
+        <div class="form-title">Item Details</div>
         <form id="form">
-            <label for="productName">Product Name:</label>
-            <input type="text" id="productName" name="productName" required><br><br>
-            <label for="netWeight">Net Weight:</label>
-            <select id="netWeight" name="netWeight" required onchange="updateCost()">
-                <option value="50">50</option>
-                <option value="26">26</option>
-                <option value="10">10</option>
-            </select><br><br>
-            <label for="quantity">Quantity:</label>
-            <input type="number" id="quantity" name="quantity" required><br><br>
-            <label for="rate">Rate:</label>
-            <input type="number" id="rate" name="rate" required><br><br>
-            <label for="cost">Cost:</label>
-            <input type="number" id="cost" name="cost" value="3" required><br><br>
-            <button type="button" onclick="submitForm()">Submit</button>
-            <button type="button" onclick="closeForm()">Cancel</button>
+            <div class="form-group">
+                <input type="text" id="productName" name="productName" placeholder="Product Name" required>
+                <label for="productName">Product Name</label>
+            </div>
+            <div class="form-group">
+                <input type="number" id="netWeight" name="netWeight" placeholder="Net Weight" required>
+                <label for="netWeight">Net Weight</label>
+            </div>
+            <div class="form-group">
+                <input type="number" id="quantity" name="quantity" placeholder="Quantity" required>
+                <label for="quantity">Quantity</label>
+            </div>
+            <div class="form-group">
+                <input type="number" id="rate" name="rate" placeholder="Rate" required>
+                <label for="rate">Rate</label>
+            </div>
+            <div class="form-group">
+                <input type="number" id="cost" name="cost" placeholder="Cost" value="3" required>
+                <label for="cost">Cost</label>
+            </div>
+            <div class="button-container">
+                <button type="button" onclick="submitForm()">Submit</button>
+                <button type="button" onclick="closeForm()">Cancel</button>
+            </div>
         </form>
     </div>
 
-    <script>
-        //const date = new Date();
-        //date.setDate(date.getDate());
-        //document.getElementById('invoiceDate').innerText = date.toLocaleDateString();
+    <div id="invoiceListModal" style="display:none; border: 2px solid #333; padding: 20px; background-color: #f9f9f9; margin-top: 20px;">
+        <h2>Available Invoices</h2>
+        <label for="invoiceListDate">Select Date:</label>
+        <input type="date" id="invoiceListDate" onchange="refreshInvoiceList()">
+        <br><br>
+        <div id="invoiceListContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+            <p>Select a date to view invoices</p>
+        </div>
+        <br>
+        <button type="button" onclick="createNewInvoice()">+ New Invoice</button>
+        <button type="button" onclick="closeInvoiceList()">Close</button>
+    </div>
 
+    <script>
         let items = [];
         let editingIndex = -1;
+        let currentInvoiceDate = '';
+        let currentInvoiceSerial = 1;
+
+        // Get storage key for invoices on a specific date
+        function getInvoiceStorageKey(date) {
+            return `invoices_${date}`;
+        }
+
+        // Get all invoices for a specific date
+        function getInvoicesForDate(date) {
+            const key = getInvoiceStorageKey(date);
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    console.error('Error loading invoices:', e);
+                    return [];
+                }
+            }
+            return [];
+        }
+
+        // Get next serial number for a date
+        function getNextSerialNumber(date) {
+            const invoices = getInvoicesForDate(date);
+            if (invoices.length === 0) return 1;
+            const maxSerial = Math.max(...invoices.map(inv => inv.serialNumber));
+            return maxSerial + 1;
+        }
+
+        // Load a specific invoice
+        function loadInvoice(date, serialNumber) {
+            const invoices = getInvoicesForDate(date);
+            const invoice = invoices.find(inv => inv.serialNumber === serialNumber);
+            if (invoice) {
+                currentInvoiceDate = date;
+                currentInvoiceSerial = serialNumber;
+                items = invoice.items || [];
+                updateDisplay();
+            }
+        }
+
+        // Save current invoice
+        function saveCurrentInvoice() {
+            if (!currentInvoiceDate) return;
+
+            const invoices = getInvoicesForDate(currentInvoiceDate);
+            const invoiceIndex = invoices.findIndex(inv => inv.serialNumber === currentInvoiceSerial);
+            
+            const invoice = {
+                serialNumber: currentInvoiceSerial,
+                date: currentInvoiceDate,
+                items: items,
+                lastModified: new Date().toISOString()
+            };
+
+            if (invoiceIndex >= 0) {
+                invoices[invoiceIndex] = invoice;
+            } else {
+                invoices.push(invoice);
+            }
+
+            const key = getInvoiceStorageKey(currentInvoiceDate);
+            localStorage.setItem(key, JSON.stringify(invoices));
+        }
+
+        // Update display with current invoice info
+        function updateDisplay() {
+            document.getElementById('invoiceDate').innerText = new Date(currentInvoiceDate).toLocaleDateString();
+            document.getElementById('invoiceSerial').innerText = currentInvoiceSerial;
+            updateTable();
+        }
+
+        // Create new invoice for selected date
+        function createNewInvoice() {
+            const dateInput = document.getElementById('invoiceListDate').value;
+            if (!dateInput) {
+                alert('Please select a date first');
+                return;
+            }
+            items = [];
+            currentInvoiceDate = dateInput;
+            currentInvoiceSerial = getNextSerialNumber(dateInput);
+            document.getElementById('datePicker').value = dateInput;
+            saveCurrentInvoice();
+            closeInvoiceList();
+            updateDisplay();
+        }
+
+        // Open invoice list modal
+        function openInvoiceList() {
+            document.getElementById('invoiceListModal').style.display = 'block';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('invoiceListDate').value = today;
+            refreshInvoiceList();
+        }
+
+        // Close invoice list modal
+        function closeInvoiceList() {
+            document.getElementById('invoiceListModal').style.display = 'none';
+        }
+
+        // Refresh invoice list for selected date
+        function refreshInvoiceList() {
+            const selectedDate = document.getElementById('invoiceListDate').value;
+            if (!selectedDate) return;
+
+            const invoices = getInvoicesForDate(selectedDate);
+            const container = document.getElementById('invoiceListContainer');
+
+            if (invoices.length === 0) {
+                container.innerHTML = '<p>No invoices for this date</p>';
+                return;
+            }
+
+            let html = '<table style="width:100%; border-collapse: collapse;"><tr><th style="border:1px solid #ccc; padding:5px;">Serial #</th><th style="border:1px solid #ccc; padding:5px;">Items</th><th style="border:1px solid #ccc; padding:5px;">Actions</th></tr>';
+            invoices.forEach(invoice => {
+                const itemCount = invoice.items ? invoice.items.length : 0;
+                html += `<tr>
+                    <td style="border:1px solid #ccc; padding:5px;">${invoice.serialNumber}</td>
+                    <td style="border:1px solid #ccc; padding:5px;">${itemCount} items</td>
+                    <td style="border:1px solid #ccc; padding:5px;">
+                        <button onclick="selectInvoice('${selectedDate}', ${invoice.serialNumber})">Open</button>
+                        <button onclick="deleteInvoice('${selectedDate}', ${invoice.serialNumber})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        // Select and load an invoice
+        function selectInvoice(date, serial) {
+            loadInvoice(date, serial);
+            closeInvoiceList();
+        }
+
+        // Delete an invoice
+        function deleteInvoice(date, serial) {
+            if (confirm(`Delete invoice #${serial}?`)) {
+                let invoices = getInvoicesForDate(date);
+                invoices = invoices.filter(inv => inv.serialNumber !== serial);
+                const key = getInvoiceStorageKey(date);
+                localStorage.setItem(key, JSON.stringify(invoices));
+                refreshInvoiceList();
+                // If deleting current invoice, create new one
+                if (currentInvoiceDate === date && currentInvoiceSerial === serial) {
+                    items = [];
+                    currentInvoiceSerial = getNextSerialNumber(date);
+                    saveCurrentInvoice();
+                    updateDisplay();
+                }
+            }
+        }
+
+        // Load items from current invoice
+        function loadItemsFromStorage() {
+            if (currentInvoiceDate) {
+                const invoices = getInvoicesForDate(currentInvoiceDate);
+                const invoice = invoices.find(inv => inv.serialNumber === currentInvoiceSerial);
+                if (invoice) {
+                    items = invoice.items || [];
+                } else {
+                    items = [];
+                }
+            } else {
+                items = [];
+            }
+            updateTable();
+        }
+
+        // Save items to current invoice
+        function saveItemsToStorage() {
+            saveCurrentInvoice();
+        }
 
         function openForm(index = -1) {
-            document.getElementById('itemForm').style.display = 'block';
+            const formElement = document.getElementById('itemForm');
+            formElement.classList.add('show');
             if (index >= 0) {
                 editingIndex = index;
                 const item = items[index];
@@ -123,11 +468,17 @@
             } else {
                 editingIndex = -1;
                 document.getElementById('form').reset();
+                // Clear any lingering placeholder state
+                document.getElementById('productName').value = '';
+                document.getElementById('netWeight').value = '';
+                document.getElementById('quantity').value = '';
+                document.getElementById('rate').value = '';
+                document.getElementById('cost').value = '';
             }
         }
 
         function closeForm() {
-            document.getElementById('itemForm').style.display = 'none';
+            document.getElementById('itemForm').classList.remove('show');
         }
 
         function submitForm() {
@@ -135,7 +486,7 @@
             const netWeight = parseFloat(document.getElementById('netWeight').value);
             const quantity = parseInt(document.getElementById('quantity').value);
             const rate = parseFloat(document.getElementById('rate').value);
-            const cost = parseFloat(document.getElementById('cost').value);
+            const cost = parseFloat(document.getElementById('cost').value) || 3;
             const unitPrice = netWeight * rate / 100;
             const totalPrice = unitPrice * quantity;
 
@@ -148,6 +499,7 @@
             }
 
             updateTable();
+            saveItemsToStorage();
             closeForm();
         }
 
@@ -183,6 +535,7 @@
         function removeItem(index) {
             items.splice(index, 1);
             updateTable();
+            saveItemsToStorage();
         }
         function updateCost() {
             const netWeight = parseFloat(document.getElementById('netWeight').value);
@@ -192,11 +545,41 @@
         }
 
         function updateInvoiceDate() {
-        const selectedDate = document.getElementById('datePicker').value;
-        if (selectedDate) {
-            document.getElementById('invoiceDate').innerText = new Date(selectedDate).toLocaleDateString();
+            const selectedDate = document.getElementById('datePicker').value;
+            if (selectedDate) {
+                currentInvoiceDate = selectedDate;
+                // Load the first invoice for this date, or create a new one
+                const invoices = getInvoicesForDate(selectedDate);
+                if (invoices.length > 0) {
+                    loadInvoice(selectedDate, invoices[0].serialNumber);
+                } else {
+                    // Create first invoice for this date
+                    currentInvoiceSerial = 1;
+                    items = [];
+                    saveCurrentInvoice();
+                    updateDisplay();
+                }
+            }
         }
-    }
+
+        // Initialize the app on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('datePicker').value = today;
+            currentInvoiceDate = today;
+            
+            // Load or create first invoice for today
+            const invoices = getInvoicesForDate(today);
+            if (invoices.length > 0) {
+                loadInvoice(today, invoices[0].serialNumber);
+            } else {
+                currentInvoiceSerial = 1;
+                items = [];
+                saveCurrentInvoice();
+                updateDisplay();
+            }
+        });
 
     </script>
 </body>
